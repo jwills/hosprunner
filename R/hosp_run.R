@@ -245,10 +245,10 @@ build_hospdeath_par <- function(data, p_hosp, p_death, p_vent, p_ICU, p_hosp_typ
 ## hospitalizations: uncontrolled ----------------------------------------
 
   data_filename <- "model_output/unifiedNPI/"
-  args <- commandArgs(trailingOnly=TRUE)
-  data_filename <- args[1]
-  cmd <- args[2]
-  ncore = as.numeric(args[3])
+  #args <- commandArgs(trailingOnly=TRUE)
+  #data_filename <- args[1]
+  cmd <- "none"
+  ncore = 1 # as.numeric(args[3])
   if(is.nan(ncore)){ncore <- 32}
 
   if (cmd == "high") {

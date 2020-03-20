@@ -12,6 +12,7 @@ library(data.table)
 library(foreach)
 
 global_index_offset <- 0
+set.seed(123456789)
 
 
 load_scenario_sims <- function(scenario_dir,

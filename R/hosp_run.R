@@ -81,19 +81,18 @@ build_hospdeath_par <- function(data, p_hosp, p_death, p_vent, p_ICU, p_hosp_typ
   print(paste("Running over",n_sim,"simulations"))
   dat_final <- foreach(s=seq_len(n_sim), .packages=c("dplyr","readr","data.table","tidyr")) %do% {
     source("R/DataUtils_withHospCapacity.R")
+    library(stringr)
     print(s)
 
     create_delay_frame <- function(X, p_X, data_, X_pars, varname) {
       X_ <- rbinom(length(data_[[X]]),data_[[X]],p_X)
-      data_X <- data.frame(time=data_$time,  uid=data_$uid, count=X_)
+      X_sum_ <- tapply(X_[X_ > 0], paste(data_$time, data_$uid)[X_ > 0], sum)
+      time_and_uid <- str_split_fixed(names(X_sum_), " ", 2)
       X_delay_ <- round(exp(X_pars[1] + X_pars[2]^2 / 2))
       
-      X_time_ <- rep(as.Date(data_X$time), data_X$count) + X_delay_
-      names(X_time_) <- rep(data_$uid, data_X$count)
-      
-      data_X <- data.frame(time=X_time_, uid=names(X_time_))
-      data_X <- data.frame(setDT(data_X)[, .N, by = .(time, uid)])
-      colnames(data_X) <- c("time","uid",paste0("incid",varname))
+      X_time_ <- as.Date(time_and_uid[,1]) + X_delay_
+      data_X <- data.table(time=X_time_, uid=time_and_uid[,2], count=X_sum_)
+      colnames(data_X) <- c("time","uid", paste0("incid", varname))
       return(data_X)
     }
     load_scenario_sim <- function(scenario_dir,

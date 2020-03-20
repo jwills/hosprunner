@@ -187,20 +187,16 @@ build_hospdeath_par <- function(data, p_hosp, p_death, p_vent, p_ICU, p_hosp_typ
       inhosp[res$date_inds[i]:min((res$date_inds[i]+R_delay_-1),len), res$geo_ind[i]] <- 
         inhosp[res$date_inds[i]:min((res$date_inds[i]+R_delay_-1),len), res$geo_ind[i]] + res$incidH[i]
       
-      inicu[res$date_inds[i]:min((res$date_inds[i]+ICU_dur_-1),len), res$sim_num_good[i]] <- 
-        inicu[res$date_inds[i]:min((res$date_inds[i]+ICU_dur_-1),len), res$sim_num_good[i]] + res$incidICU[i]
+      inicu[res$date_inds[i]:min((res$date_inds[i]+ICU_dur_-1),len), res$geo_ind[i]] <- 
+        inicu[res$date_inds[i]:min((res$date_inds[i]+ICU_dur_-1),len), res$geo_ind[i]] + res$incidICU[i]
       
     }
   
 
     
      for (x in 1:nrow(res)){
-       
        res$hosp_curr[x] <- inhosp[res$date_inds[x], res$geo_ind[x]]
        res$icu_curr[x] <- inicu[res$date_inds[x], res$geo_ind[x]]
-       #res$hosp_curr <- res$hosp_curr + res$date_inds %in% (res$date_inds[x] + 0:R_delay_)*res$incidH[x]
-       #res$icu_curr <- res$icu_curr + res$date_inds %in% (res$date_inds[x] + 0:ICU_dur_)*res$incidICU[x]
-       #res$vent_curr <- res$vent_curr + res$date_inds %in% (res$date_inds[x] + 0:Vent_dur_)*res$incidVent[x]
      }
     
     outfile <- paste0(sub('/','/hospitalization/',data_filename),'/',scenario_name,'-',s + index_offset,'.csv')

@@ -86,14 +86,17 @@ build_hospdeath_par <- function(data, p_hosp, p_death, p_vent, p_ICU, p_hosp_typ
 
     create_delay_frame <- function(X, p_X, data_, X_pars, varname) {
       X_ <- rbinom(length(data_[[X]]),data_[[X]],p_X)
-      X_sum_ <- tapply(X_[X_ > 0], paste(data_$time, data_$uid)[X_ > 0], sum)
-      time_and_uid <- str_split_fixed(names(X_sum_), " ", 2)
-      X_delay_ <- round(exp(X_pars[1] + X_pars[2]^2 / 2))
-      
-      X_time_ <- as.Date(time_and_uid[,1]) + X_delay_
-      data_X <- data.table(time=X_time_, uid=time_and_uid[,2], count=X_sum_)
-      colnames(data_X) <- c("time","uid", paste0("incid", varname))
-      return(data_X)
+      nonzero_mask <- X_ > 0
+      nonzero_time <- data_$time[nonzero_mask] 
+      nonzero_uid <- data_$uid[nonzero_mask] 
+      rc <- data.table(
+        time = data_$time[nonzero_mask] + round(exp(X_pars[1] + X_pars[2]^2 / 2)),
+        uid = data_$uid[nonzero_mask],
+        count = X_[nonzero_mask]
+      )
+      names(rc)[3] <- paste0("incid",varname)
+
+      return(rc)
     }
     load_scenario_sim <- function(scenario_dir,
                                    sim_id,

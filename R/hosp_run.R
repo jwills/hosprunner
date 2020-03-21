@@ -86,7 +86,8 @@ build_hospdeath_par <- function(data, p_hosp, p_death, p_vent, p_ICU, p_hosp_typ
 
     create_delay_frame <- function(X, p_X, data_, X_pars, varname) {
       X_ <- rbinom(length(data_[[X]]),data_[[X]],p_X)
-      nonzero_mask <- X_ > 0
+      # nonzero_mask <- X_ > 0
+      nonzero_mask <- rep(TRUE,length(X_))
       nonzero_time <- data_$time[nonzero_mask] 
       nonzero_uid <- data_$uid[nonzero_mask] 
       rc <- data.table(
@@ -183,24 +184,19 @@ build_hospdeath_par <- function(data, p_hosp, p_death, p_vent, p_ICU, p_hosp_typ
     res$sim_num_good <- res$sim_num_good - min(res$sim_num_good) +1
     
     res$geo_ind <- as.numeric(as.factor(res$geoid))
-    inhosp <- matrix(0, nrow=max(res$date_inds),ncol=max(res$geo_ind))
-    inicu <- inhosp
-    len<-max(res$date_inds)
-    for (i in 1:nrow(res)) {
-      inhosp[res$date_inds[i]:min((res$date_inds[i]+R_delay_-1),len), res$geo_ind[i]] <- 
-        inhosp[res$date_inds[i]:min((res$date_inds[i]+R_delay_-1),len), res$geo_ind[i]] + res$incidH[i]
-      
-      inicu[res$date_inds[i]:min((res$date_inds[i]+ICU_dur_-1),len), res$geo_ind[i]] <- 
-        inicu[res$date_inds[i]:min((res$date_inds[i]+ICU_dur_-1),len), res$geo_ind[i]] + res$incidICU[i]
-      
-    }
-  
 
-    
-     for (x in 1:nrow(res)){
-       res$hosp_curr[x] <- inhosp[res$date_inds[x], res$geo_ind[x]]
-       res$icu_curr[x] <- inicu[res$date_inds[x], res$geo_ind[x]]
-     }
+    res <- res %>%
+      arrange(geo_ind, date_inds) %>%
+      group_by(geo_ind) %>%
+      group_map(function(.x,.y){
+        .x$hosp_curr <- cumsum(.x$incidH) - lag(cumsum(.x$incidH),n=R_delay_,default=0)
+        .x$icu_curr <- cumsum(.x$incidICU) - lag(cumsum(.x$incidICU),n=ICU_dur_,default=0)
+        .x$geo_ind <- .y$geo_ind
+        return(.x)
+      }) %>%
+      do.call(what=rbind) %>%
+      arrange(date_inds, geo_ind)
+
     
     outfile <- paste0(sub('/','/hospitalization/',data_filename),'/',scenario_name,'-',s + index_offset,'.csv')
     outfile <- paste0('hospitalization/',data_filename,'/',scenario_name,'-',s + index_offset,'.csv')
@@ -245,11 +241,10 @@ build_hospdeath_par <- function(data, p_hosp, p_death, p_vent, p_ICU, p_hosp_typ
   data_filename <- "model_output/unifiedNPI/"
   #args <- commandArgs(trailingOnly=TRUE)
   #data_filename <- args[1]
-  cmd <- "none"
+  cmd <- "high"
   ncore = 1 # as.numeric(args[3])
   if(is.nan(ncore)){ncore <- 32}
 
-  if (cmd == "high") {
   res_npi3 <- build_hospdeath_par(NULL,
                                   p_hosp = p_death[3]*10,
                                   p_death = .1,
@@ -270,52 +265,3 @@ build_hospdeath_par <- function(data, p_hosp, p_death, p_vent, p_ICU, p_hosp_typ
                                  scenario_name = "high_death",
                                   index_offset = global_index_offset
   )
-  }
-
-## hospitalizations: Wuhan-like  ----------------------------------------
- 
-  if (cmd == "med") { 
-  res_npi2 <- build_hospdeath_par(NULL,
-                                  p_hosp = p_death[2]*10,
-                                  p_death = .1,
-                                  p_vent = p_vent,
-                                 p_ICU = p_ICU,
-                                  p_hosp_type = "gamma",
-                                  time_hosp_pars=time_hosp_pars,
-                                  time_death_pars=time_death_pars,
-                                  time_disch_pars=time_disch_pars,
-                                 time_ICU_pars = time_ICU_pars,
-                                  time_vent_pars = time_vent_pars,
-                                  time_ICUdur_pars = time_ICUdur_pars, 
-                                  end_date = "2020-10-01",
-                                 length_geoid = 4,
-                                  incl.county = TRUE,
-                                  cores = ncore,
-                                  data_filename = data_filename,
-                                  scenario_name = "med_death",
-                                 index_offset = global_index_offset
-  )
-  }
-
-  if (cmd == "low") {
-  res_npi1 <- build_hospdeath_par(NULL,
-                                  p_hosp = p_death[1]*10,
-                                  p_death = .1,
-                                  p_vent = p_vent,
-                                  p_ICU = p_ICU,
-                                  p_hosp_type = "gamma",
-                                  time_hosp_pars=time_hosp_pars,
-                                  time_death_pars=time_death_pars,
-                                  time_disch_pars=time_disch_pars,
-                                  time_ICU_pars = time_ICU_pars,
-                                  time_vent_pars = time_vent_pars,
-                                  time_ICUdur_pars = time_ICUdur_pars, 
-                                  end_date = "2020-10-01",
-                                  length_geoid = 4,
-                                  incl.county = TRUE,
-                                  cores = ncore,
-                                  data_filename = data_filename,
-                                  scenario_name = "low_death",
-                                  index_offset = global_index_offset
-  )
-  }

@@ -136,7 +136,7 @@ build_hospdeath_par <- function(data, p_hosp, p_death, p_vent, p_ICU, p_hosp_typ
     county_dat$new_pop <- county_dat$pop2010
     county_dat <- make_metrop_labels(county_dat)
     dat_ <- load_scenario_sim(data_filename,s,keep_compartments = c("diffI","cumI")) %>%
-    filter(geoid %in% county_dat$geoid[county_dat$stateUSPS=="CA"], time<=end_date, comp == "diffI", N > 0) %>%
+    filter(geoid %in% county_dat$geoid[county_dat$stateUSPS=="CA"], time<=end_date, comp == "diffI") %>%
     mutate(hosp_curr = 0, icu_curr = 0, vent_curr = 0, uid = paste0(geoid, "-",sim_num)) %>%
     rename(incidI = N)
     dates_ <- as.Date(dat_$time)
